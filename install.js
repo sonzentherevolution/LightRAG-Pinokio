@@ -1,25 +1,49 @@
 module.exports = {
   run: [
-    // Clone the LightRAG repository
+    // Clone the LightRAG repository only if it doesn't exist
     {
       method: "shell.run",
       params: {
         message: [
-          "echo '🔍 Cloning LightRAG repository...'",
-          "git clone https://github.com/HKUDS/LightRAG"
-        ]
+          "echo '🔍 Checking for existing LightRAG repository...'",
+          "[ -d LightRAG ] || git clone https://github.com/HKUDS/LightRAG"
+        ],
+        onError: { // Add error handling for git clone failure
+          message: "Failed to clone LightRAG repository. Please check your internet connection and Git setup.",
+        }
       }
     },
-    // Create necessary directories
+    // Create necessary directories using fs.mkdir for cross-platform compatibility
     {
-      method: "shell.run",
+      method: "fs.mkdir",
       params: {
-        path: "LightRAG",
-        message: [
-          "echo '📁 Creating directories...'",
-          "mkdir -p {{env.INPUT_DIR}} {{env.WORKING_DIR}}",
-          "mkdir -p lightrag/api/webui"
-        ]
+        path: "{{env.INPUT_DIR}}"
+      }
+    },
+    {
+      method: "fs.mkdir",
+      params: {
+        path: "{{env.WORKING_DIR}}"
+      }
+    },
+    {
+      method: "fs.mkdir",
+      params: {
+        // Create nested directories step-by-step if fs.mkdir doesn't handle recursive creation
+        // Assuming {{cwd}} is the project root (LightRAG-Pinokio)
+        path: "LightRAG/lightrag"
+      }
+    },
+     {
+      method: "fs.mkdir",
+      params: {
+        path: "LightRAG/lightrag/api"
+      }
+    },
+    {
+      method: "fs.mkdir",
+      params: {
+        path: "LightRAG/lightrag/api/webui"
       }
     },
     // Create .env file from ENVIRONMENT settings
@@ -110,28 +134,39 @@ LIGHTRAG_DOC_STATUS_STORAGE={{env.LIGHTRAG_DOC_STATUS_STORAGE}}`
         ]
       }
     },
-    // Check if Bun is installed, attempt install via npm if missing
+    // Check if Bun is installed, attempt install via PowerShell if missing (Windows specific)
     {
       method: "shell.run",
       params: {
+        // Use script for multi-line logic and conditional execution
         script: [
           "echo 'Checking for Bun installation...'",
-          "bun --version",
-          "if [ $? -ne 0 ]; then",
-          "  echo 'Bun not found, attempting to install via npm...'",
-          "  npm install -g bun",
-          "  if [ $? -ne 0 ]; then",
-          "    echo 'ERROR: Failed to install Bun using npm.'",
-          "    exit 1",
+          "bun --version", // Check if bun is already available
+          "if [ $? -ne 0 ]; then", // $? holds the exit code of the last command
+          "  echo 'Bun not found, attempting to install using PowerShell (Windows)...'",
+          // Execute PowerShell command to install Bun
+          "  powershell -c "irm bun.sh/install.ps1|iex"",
+          "  if [ $? -ne 0 ]; then", // Check if PowerShell command failed
+          "    echo 'ERROR: Failed to install Bun using PowerShell.'",
+          "    echo 'Please install Bun manually (https://bun.sh/docs/installation) and ensure it is in your PATH.'",
+          "    exit 1", // Exit script if installation fails
           "  else",
-          "    echo 'Bun installed successfully via npm.'",
-          "    bun --version || (echo 'ERROR: Bun installed but still not found in PATH?' && exit 1)",
+          "    echo 'Bun installation attempt finished. Verifying installation...'",
+          "    bun --version", // Verify installation
+           "   if [ $? -ne 0 ]; then",
+           "      echo 'ERROR: Bun installed but command still not found. Ensure C:\Users\<YourUsername>\.bun\bin is in your PATH.'",
+           "      echo 'You may need to restart Pinokio or your terminal.'",
+           "      exit 1",
+           "   else",
+           "      echo 'Bun verified successfully.'",
+           "   fi",
           "  fi",
+          "else",
+          "  echo 'Bun is already installed.'",
           "fi"
-        ].join("\n"),
-        onError: {
-          message: "Failed to verify or install Bun. Please install Bun manually (https://bun.sh/docs/installation) and try again.",
-          href: "https://bun.sh/docs/installation"
+        ].join("\n"), // Join lines with newline for the script
+        onError: { // Catch errors from the shell.run step itself
+          message: "An error occurred during the Bun check/installation process. Please check the logs.",
         }
       }
     },
@@ -162,11 +197,17 @@ LIGHTRAG_DOC_STATUS_STORAGE={{env.LIGHTRAG_DOC_STATUS_STORAGE}}`
       method: "shell.run",
       params: {
         path: "LightRAG",
+        // Use robocopy for more robust file copying on Windows
         message: [
           "echo '📋 Copying WebUI files to API directory...'",
-          "mkdir -p lightrag/api/webui",
-          "cp -r lightrag_webui/dist/* lightrag/api/webui/ || echo '⚠️ WARNING: Could not copy WebUI files'"
-        ]
+          "robocopy lightrag_webui\dist lightrag\api\webui /E /NFL /NDL /NJH /NJS /nc /ns /np",
+          // Check robocopy exit code (0-7 indicate success)
+          "if %errorlevel% GEQ 8 (echo '⚠️ WARNING: Could not copy WebUI files. Robocopy error code: %errorlevel%' && exit /b 0) else (echo 'WebUI files copied successfully.')"
+        ],
+         // Add onError for shell command execution failure
+        onError: {
+            message: "Failed to execute the command to copy WebUI files."
+        }
       }
     },
     {
