@@ -1,0 +1,33 @@
+#####################################################################################################################
+#
+# LightRAG Configuration Settings
+# - Customize these settings before installation if needed
+#
+#####################################################################################################################
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=9621
+WEBUI_TITLE=LightRAG WebUI
+WEBUI_DESCRIPTION=Simple and Fast Graph Based RAG System
+
+# Directory Configuration
+WORKING_DIR=./rag_storage
+INPUT_DIR=./inputs
+
+# LLM Configuration - Must have Ollama installed
+LLM_BINDING=ollama
+LLM_MODEL=mistral:latest
+LLM_BINDING_HOST=http://localhost:11434
+
+# Embedding Configuration
+EMBEDDING_BINDING=ollama
+EMBEDDING_MODEL=nomic-embed-text:latest
+EMBEDDING_DIM=768
+EMBEDDING_BINDING_HOST=http://localhost:11434
+
+# Storage Configuration
+LIGHTRAG_KV_STORAGE=JsonKVStorage
+LIGHTRAG_VECTOR_STORAGE=NanoVectorDBStorage
+LIGHTRAG_GRAPH_STORAGE=NetworkXStorage
+LIGHTRAG_DOC_STATUS_STORAGE=JsonDocStatusStorage 
