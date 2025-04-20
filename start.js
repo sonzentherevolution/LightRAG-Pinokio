@@ -32,7 +32,7 @@ module.exports = {
     {
       method: "local.set",
       params: {
-        url: "http://localhost:{{env.PORT}}/webui/"
+        url: "http://localhost:{{env.PORT}}/"
       }
     },
     {

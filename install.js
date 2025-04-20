@@ -110,25 +110,50 @@ LIGHTRAG_DOC_STATUS_STORAGE={{env.LIGHTRAG_DOC_STATUS_STORAGE}}`
         ]
       }
     },
-    // Simple direct install of WebUI dependencies using npm
+    // Check if Bun is installed, attempt install via npm if missing
+    {
+      method: "shell.run",
+      params: {
+        script: [
+          "echo 'Checking for Bun installation...'",
+          "bun --version",
+          "if [ $? -ne 0 ]; then",
+          "  echo 'Bun not found, attempting to install via npm...'",
+          "  npm install -g bun",
+          "  if [ $? -ne 0 ]; then",
+          "    echo 'ERROR: Failed to install Bun using npm.'",
+          "    exit 1",
+          "  else",
+          "    echo 'Bun installed successfully via npm.'",
+          "    bun --version || (echo 'ERROR: Bun installed but still not found in PATH?' && exit 1)",
+          "  fi",
+          "fi"
+        ].join("\n"),
+        onError: {
+          message: "Failed to verify or install Bun. Please install Bun manually (https://bun.sh/docs/installation) and try again.",
+          href: "https://bun.sh/docs/installation"
+        }
+      }
+    },
+    // Install WebUI dependencies using Bun
     {
       method: "shell.run",
       params: {
         path: "LightRAG/lightrag_webui",
         message: [
-          "echo '🌐 Installing WebUI dependencies...'",
-          "npm install"
+          "echo '🌐 Installing WebUI dependencies using Bun...'",
+          "bun install --frozen-lockfile"
         ]
       }
     },
-    // Build the WebUI using npx vite directly
+    // Build the WebUI using Bun
     {
       method: "shell.run",
       params: {
         path: "LightRAG/lightrag_webui",
         message: [
-          "echo '🔨 Building the WebUI...'",
-          "npx vite build --emptyOutDir"
+          "echo '🔨 Building the WebUI using Bun...'",
+          "bun run build --emptyOutDir"
         ]
       }
     },
