@@ -4,7 +4,10 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "git clone https://github.com/HKUDS/LightRAG"
+        message: [
+          "echo '🔍 Cloning LightRAG repository...'",
+          "git clone https://github.com/HKUDS/LightRAG"
+        ]
       }
     },
     // Create necessary directories
@@ -12,7 +15,11 @@ module.exports = {
       method: "shell.run",
       params: {
         path: "LightRAG",
-        message: "mkdir -p {{env.INPUT_DIR}} {{env.WORKING_DIR}}"
+        message: [
+          "echo '📁 Creating directories...'",
+          "mkdir -p {{env.INPUT_DIR}} {{env.WORKING_DIR}}",
+          "mkdir -p lightrag/api/webui"
+        ]
       }
     },
     // Create .env file from ENVIRONMENT settings
@@ -72,7 +79,10 @@ LIGHTRAG_DOC_STATUS_STORAGE={{env.LIGHTRAG_DOC_STATUS_STORAGE}}`
     {
       method: "shell.run",
       params: {
-        message: "python -m venv env"
+        message: [
+          "echo '🐍 Creating Python virtual environment...'",
+          "python -m venv env"
+        ]
       }
     },
     // Install LightRAG with API support in the virtual environment
@@ -81,7 +91,10 @@ LIGHTRAG_DOC_STATUS_STORAGE={{env.LIGHTRAG_DOC_STATUS_STORAGE}}`
       params: {
         venv: "env",
         path: "LightRAG",
-        message: "pip install -e \".[api]\""
+        message: [
+          "echo '📦 Installing LightRAG with API support...'",
+          "pip install -e \".[api]\""
+        ]
       }
     },
     // Check if Ollama is installed and pull required models
@@ -89,23 +102,45 @@ LIGHTRAG_DOC_STATUS_STORAGE={{env.LIGHTRAG_DOC_STATUS_STORAGE}}`
       method: "shell.run",
       params: {
         message: [
-          "echo 'Checking Ollama installation...'",
+          "echo '🤖 Checking Ollama installation...'",
           "ollama list || (echo '⚠️ WARNING: Ollama not found. Please install Ollama from https://ollama.com/' && exit 0)",
-          "echo 'Pulling required Ollama models...'",
+          "echo '📥 Pulling required Ollama models...'",
           "ollama pull {{env.EMBEDDING_MODEL}} || echo '⚠️ WARNING: Failed to pull embedding model'",
           "ollama pull {{env.LLM_MODEL}} || echo '⚠️ WARNING: Failed to pull LLM model'"
         ]
       }
     },
-    // Build the WebUI
+    // Simple direct install of WebUI dependencies using npm
     {
       method: "shell.run",
       params: {
         path: "LightRAG/lightrag_webui",
         message: [
-          "echo 'Building LightRAG WebUI...'",
-          "npm install || echo '⚠️ WARNING: Failed to install WebUI dependencies with npm, trying bun...'",
-          "bunx --bun vite build || npm run build-no-bun || echo '⚠️ WARNING: Failed to build WebUI'"
+          "echo '🌐 Installing WebUI dependencies...'",
+          "npm install"
+        ]
+      }
+    },
+    // Build the WebUI using npx vite directly
+    {
+      method: "shell.run",
+      params: {
+        path: "LightRAG/lightrag_webui",
+        message: [
+          "echo '🔨 Building the WebUI...'",
+          "npx vite build --emptyOutDir"
+        ]
+      }
+    },
+    // Copy the built WebUI to the expected location
+    {
+      method: "shell.run",
+      params: {
+        path: "LightRAG",
+        message: [
+          "echo '📋 Copying WebUI files to API directory...'",
+          "mkdir -p lightrag/api/webui",
+          "cp -r lightrag_webui/dist/* lightrag/api/webui/ || echo '⚠️ WARNING: Could not copy WebUI files'"
         ]
       }
     },
