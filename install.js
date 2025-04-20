@@ -145,7 +145,7 @@ LIGHTRAG_DOC_STATUS_STORAGE={{env.LIGHTRAG_DOC_STATUS_STORAGE}}`
           "if [ $? -ne 0 ]; then", // $? holds the exit code of the last command
           "  echo 'Bun not found, attempting to install using PowerShell (Windows)...'",
           // Execute PowerShell command to install Bun
-          "  powershell -c "irm bun.sh/install.ps1|iex"",
+          "  powershell -c \"irm bun.sh/install.ps1|iex\"", // Escape inner quotes
           "  if [ $? -ne 0 ]; then", // Check if PowerShell command failed
           "    echo 'ERROR: Failed to install Bun using PowerShell.'",
           "    echo 'Please install Bun manually (https://bun.sh/docs/installation) and ensure it is in your PATH.'",
